@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.env/
+
+# macOS
+.DS_Store
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# logs
+*.log
+
+# JSON state file (선택)
+state.json
