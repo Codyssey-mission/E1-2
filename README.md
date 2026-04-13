@@ -30,8 +30,7 @@ E1-2/
 ├── README.md
 ├── main.py
 ├── quiz.py
-├── state.json
-└── quiz_game/
+└── state.json
 ```
 
 ## 데이터 파일 설명
