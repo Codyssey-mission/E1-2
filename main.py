@@ -5,6 +5,8 @@ import random
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import shutil
+import os
 
 from quiz import Quiz, get_default_quizzes
 
@@ -33,7 +35,7 @@ class QuizGame:
             return input(prompt).strip()
         except KeyboardInterrupt:
             print("\n입력이 취소되었습니다. 가능한 범위에서 저장 후 종료합니다.")
-            self.safe_shutdown()
+            self.safe_shutdown() 
             return None
         except EOFError:
             print("\n입력 스트림이 종료되었습니다. 가능한 범위에서 저장 후 종료합니다.")
@@ -99,10 +101,14 @@ class QuizGame:
             self.quizzes = [Quiz.from_dict(item) for item in quizzes_data]
             self.best_score = best_score
             self.score_history = [self.normalize_history_entry(item) for item in score_history]
-        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        except (OSError, KeyError, TypeError, ValueError) as error:
             print(f"state.json을 읽을 수 없어 기본 데이터로 복구합니다. ({error})")
             self.reset_default_state()
             self.save_state()
+        except(json.JSONDecodeError):
+            pass
+
+        
 
     def normalize_history_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         played_at = entry.get("played_at")
@@ -142,7 +148,7 @@ class QuizGame:
     def prompt_quiz_count(self) -> Optional[int]:
         print(f"현재 등록된 퀴즈는 총 {len(self.quizzes)}문제입니다.")
         return self.prompt_int_in_range("몇 문제를 풀까요?: ", 1, len(self.quizzes))
-
+ 
     def prompt_answer(self, quiz: Quiz, hint_used: bool) -> Optional[int]:
         while self.running:
             if hint_used:
@@ -195,6 +201,7 @@ class QuizGame:
 
         selected_quizzes = random.sample(self.quizzes, question_count)
         score = 0
+        interrupted = False
 
         for index, quiz in enumerate(selected_quizzes, start=1):
             print(f"\n[{index}/{question_count}]")
@@ -203,8 +210,11 @@ class QuizGame:
 
             while self.running:
                 answer = self.prompt_answer(quiz, hint_used)
+
                 if answer is None:
-                    return
+                    interrupted = True
+                    break
+
                 if answer == 0:
                     hint_used = True
                     continue
@@ -218,6 +228,9 @@ class QuizGame:
                         print("정답입니다.")
                 else:
                     print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
+                break
+
+            if interrupted:
                 break
 
         print(f"\n결과: {question_count}문제 중 총 {score}점")
@@ -313,6 +326,9 @@ class QuizGame:
         self.safe_shutdown()
 
     def safe_shutdown(self) -> None:
+        state_file = "state.json"
+        if os.path.exists(state_file):
+            shutil.copy2(state_file, state_file + ".bak") 
         self.save_state()
         self.running = False
 
