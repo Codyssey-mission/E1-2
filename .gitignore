@@ -15,6 +15,3 @@ venv/
 
 # logs
 *.log
-
-# JSON state file (선택)
-state.json
