@@ -12,6 +12,7 @@ from quiz import Quiz, get_default_quizzes
 
 
 class QuizGame:
+    # 게임 상태와 저장 파일 경로를 초기화하고 기존 데이터를 불러온다.
     def __init__(self) -> None:
         self.state_path = Path(__file__).resolve().parent / "state.json"
         self.quizzes: List[Quiz] = []
@@ -20,6 +21,7 @@ class QuizGame:
         self.running = True
         self.load_state()
 
+    # 사용자에게 메인 메뉴를 출력한다.
     def show_menu(self) -> None:
         print("\n==== 수도 맞추기 퀴즈 게임 ====")
         print("1. 퀴즈 풀기")
@@ -30,6 +32,7 @@ class QuizGame:
         print("6. 점수 기록 보기")
         print("7. 종료")
 
+    # 입력을 받아오고, 입력 중단 상황에서는 저장 후 안전하게 종료한다.
     def read_input(self, prompt: str) -> Optional[str]:
         try:
             return input(prompt).strip()
@@ -42,6 +45,7 @@ class QuizGame:
             self.safe_shutdown()
             return None
 
+    # 비어 있지 않은 문자열 입력이 들어올 때까지 반복해서 요청한다.
     def prompt_non_empty(self, prompt: str) -> Optional[str]:
         while self.running:
             value = self.read_input(prompt)
@@ -53,6 +57,7 @@ class QuizGame:
             return value
         return None
 
+    # 지정한 범위의 정수를 입력받을 때까지 반복해서 요청한다.
     def prompt_int_in_range(self, prompt: str, minimum: int, maximum: int) -> Optional[int]:
         while self.running:
             raw_value = self.read_input(prompt)
@@ -72,10 +77,12 @@ class QuizGame:
             return value
         return None
 
+    # 메인 메뉴에서 사용할 번호를 입력받고, 실패 시 종료를 선택한 것으로 처리한다.
     def get_menu_choice(self) -> int:
         choice = self.prompt_int_in_range("메뉴 번호를 입력하세요: ", 1, 7)
         return choice if choice is not None else 7
 
+    # 저장된 state.json을 읽어 게임 상태를 복원하고, 실패하면 기본 상태로 초기화한다.
     def load_state(self) -> None:
         if not self.state_path.exists():
             print("state.json이 없어 기본 퀴즈 데이터로 시작합니다.")
@@ -110,6 +117,7 @@ class QuizGame:
 
         
 
+    # 저장된 점수 기록 한 건이 올바른 형식인지 검사하고 정규화한다.
     def normalize_history_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         played_at = entry.get("played_at")
         total_questions = entry.get("total_questions")
@@ -128,11 +136,13 @@ class QuizGame:
             "score": score,
         }
 
+    # 기본 퀴즈 목록과 빈 점수 기록으로 상태를 재설정한다.
     def reset_default_state(self) -> None:
         self.quizzes = get_default_quizzes()
         self.best_score = None
         self.score_history = []
 
+    # 현재 게임 상태를 state.json 파일에 저장한다.
     def save_state(self) -> None:
         data = {
             "quizzes": [quiz.to_dict() for quiz in self.quizzes],
@@ -145,10 +155,11 @@ class QuizGame:
         except OSError as error:
             print(f"저장 중 오류가 발생했습니다: {error}")
 
+    # 이번 게임에서 풀 문제 수를 사용자에게 입력받는다.
     def prompt_quiz_count(self) -> Optional[int]:
         print(f"현재 등록된 퀴즈는 총 {len(self.quizzes)}문제입니다.")
         return self.prompt_int_in_range("몇 문제를 풀까요?: ", 1, len(self.quizzes))
- 
+    # 정답 번호를 입력받고, 필요하면 힌트를 한 번만 보여준다.
     def prompt_answer(self, quiz: Quiz, hint_used: bool) -> Optional[int]:
         while self.running:
             if hint_used:
@@ -180,6 +191,7 @@ class QuizGame:
             return value
         return None
 
+    # 현재 게임 결과를 시간과 함께 점수 기록에 추가한다.
     def append_history(self, total_questions: int, score: int) -> None:
         self.score_history.append(
             {
@@ -189,6 +201,7 @@ class QuizGame:
             }
         )
 
+    # 선택한 수만큼 문제를 출제하고 채점한 뒤 최고 점수와 기록을 갱신한다.
     def play_quiz(self) -> None:
         print("\n[퀴즈 풀기]")
         if not self.quizzes:
@@ -244,6 +257,7 @@ class QuizGame:
 
         self.save_state()
 
+    # 사용자 입력으로 새 퀴즈를 만들어 목록과 저장 파일에 추가한다.
     def add_quiz(self) -> None:
         print("\n[퀴즈 추가]")
 
@@ -276,6 +290,7 @@ class QuizGame:
         self.save_state()
         print("새 퀴즈가 저장되었습니다.")
 
+    # 선택한 번호의 퀴즈를 목록에서 삭제하고 저장한다.
     def delete_quiz(self) -> None:
         print("\n[퀴즈 삭제]")
         if not self.quizzes:
@@ -291,6 +306,7 @@ class QuizGame:
         self.save_state()
         print(f"삭제되었습니다: {removed_quiz.question}")
 
+    # 등록된 모든 퀴즈와 각 퀴즈의 힌트를 화면에 보여준다.
     def show_quizzes(self) -> None:
         print("\n[퀴즈 목록 보기]")
         if not self.quizzes:
@@ -302,6 +318,7 @@ class QuizGame:
             quiz.display()
             print(f"힌트: {quiz.hint}")
 
+    # 현재까지 저장된 최고 점수를 출력한다.
     def show_best_score(self) -> None:
         print("\n[최고 점수 확인]")
         if self.best_score is None:
@@ -309,6 +326,7 @@ class QuizGame:
             return
         print(f"현재 최고 점수: {self.best_score}")
 
+    # 저장된 플레이 기록을 시간순 목록으로 출력한다.
     def show_score_history(self) -> None:
         print("\n[점수 기록 보기]")
         if not self.score_history:
@@ -321,10 +339,12 @@ class QuizGame:
                 f"{entry['total_questions']}문제 | {entry['score']}점"
             )
 
+    # 종료 메시지를 출력하고 안전 종료 절차를 실행한다.
     def exit_game(self) -> None:
         print("\n게임을 종료합니다.")
         self.safe_shutdown()
 
+    # 현재 상태를 저장하고 메인 루프를 멈춘다.
     def safe_shutdown(self) -> None:
         state_file = "state.json"
         if os.path.exists(state_file):
@@ -332,6 +352,7 @@ class QuizGame:
         self.save_state()
         self.running = False
 
+    # 사용자가 종료를 선택할 때까지 메뉴 입력에 따라 기능을 실행한다.
     def run(self) -> None:
         while self.running:
             self.show_menu()
